@@ -549,7 +549,7 @@ struct ColorScheme {
 
 impl ColorScheme {
     pub fn new() -> Self {
-        use tailwind::{BLUE, SLATE};
+        use tailwind::{BLUE, INDIGO, ORANGE, SKY, SLATE};
 
         if Self::is_true_color_supported() {
             Self {
@@ -575,13 +575,13 @@ impl ColorScheme {
                 Percentage: Color::Gray,
                 Ratio: Color::Gray,
                 Fill: Color::Gray,
-                Legacy: Color::from_u32(3),
-                Start: Color::from_u32(4),
-                Center: Color::from_u32(4),
-                End: Color::from_u32(4),
-                SpaceEvenly: Color::from_u32(5),
-                SpaceBetween: Color::from_u32(5),
-                SpaceAround: Color::from_u32(5),
+                Legacy: Color::Indexed(3),
+                Start: Color::Indexed(4),
+                Center: Color::Indexed(4),
+                End: Color::Indexed(4),
+                SpaceEvenly: Color::Indexed(5),
+                SpaceBetween: Color::Indexed(5),
+                SpaceAround: Color::Indexed(5),
             }
         }
     }
