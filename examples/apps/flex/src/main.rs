@@ -363,16 +363,18 @@ impl SelectedTab {
 
     /// Convert a `SelectedTab` into a `Line` to display it by the `Tabs` widget.
     fn to_tab_title(value: Self) -> Line<'static> {
+        let cs = ColorScheme::new();
+
         use tailwind::{INDIGO, ORANGE, SKY};
         let text = value.to_string();
         let color = match value {
-            Self::Legacy => ORANGE.c400,
-            Self::Start => SKY.c400,
-            Self::Center => SKY.c300,
-            Self::End => SKY.c200,
-            Self::SpaceEvenly => INDIGO.c400,
-            Self::SpaceBetween => INDIGO.c300,
-            Self::SpaceAround => INDIGO.c500,
+            Self::Legacy => cs.Legacy,
+            Self::Start => cs.Start,
+            Self::Center => cs.Center,
+            Self::End => cs.End,
+            Self::SpaceEvenly => cs.SpaceEvenly,
+            Self::SpaceBetween => cs.SpaceBetween,
+            Self::SpaceAround => cs.SpaceAround,
         };
         format!(" {text} ").fg(color).bg(Color::Black).into()
     }
@@ -529,45 +531,68 @@ fn get_description_height(s: &str) -> u16 {
     }
 }
 
-
-struct ColorScheme{
+struct ColorScheme {
     pub Min: Color,
     pub Max: Color,
     pub Length: Color,
     pub Percentage: Color,
     pub Ratio: Color,
     pub Fill: Color,
+    pub Legacy: Color,
+    pub Start: Color,
+    pub Center: Color,
+    pub End: Color,
+    pub SpaceEvenly: Color,
+    pub SpaceBetween: Color,
+    pub SpaceAround: Color,
 }
 
-impl ColorScheme{
-    pub fn new() -> Self{
+impl ColorScheme {
+    pub fn new() -> Self {
         use tailwind::{BLUE, SLATE};
 
         if Self::is_true_color_supported() {
-            Self{
+            Self {
                 Min: BLUE.c900,
                 Max: BLUE.c800,
                 Length: SLATE.c700,
                 Percentage: SLATE.c800,
                 Ratio: SLATE.c900,
                 Fill: SLATE.c950,
+                Legacy: ORANGE.c400,
+                Start: SKY.c400,
+                Center: SKY.c300,
+                End: SKY.c200,
+                SpaceEvenly: INDIGO.c400,
+                SpaceBetween: INDIGO.c300,
+                SpaceAround: INDIGO.c500,
             }
-        }else{
-            Self{
+        } else {
+            Self {
                 Min: Color::Blue,
                 Max: Color::Blue,
-                Length: Color::Gray,
+                Length: Color::White,
                 Percentage: Color::Gray,
                 Ratio: Color::Gray,
                 Fill: Color::Gray,
+                Legacy: Color::from_u32(3),
+                Start: Color::from_u32(4),
+                Center: Color::from_u32(4),
+                End: Color::from_u32(4),
+                SpaceEvenly: Color::from_u32(5),
+                SpaceBetween: Color::from_u32(5),
+                SpaceAround: Color::from_u32(5),
             }
         }
     }
 
-    fn is_true_color_supported() -> bool{
+    fn is_true_color_supported() -> bool {
         let term = std::env::var("TERM_PROGRAM").unwrap_or_default();
         if term == "Apple_Terminal" {
-            let term_v = std::env::var("TERM_PROGRAM_VERSION").unwrap_or_default().parse().unwrap_or(0);
+            let term_v = std::env::var("TERM_PROGRAM_VERSION")
+                .unwrap_or_default()
+                .parse()
+                .unwrap_or(0);
             if term_v < 460 {
                 return false;
             }
