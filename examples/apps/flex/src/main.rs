@@ -509,25 +509,14 @@ impl Example {
     }
 }
 fn color_for_constraint(constraint: Constraint) -> Color {
-    use tailwind::{BLUE, SLATE};
-    if is_true_color_supported() {
+    let cs = ColorScheme::new();
     match constraint {
-        Constraint::Min(_) => BLUE.c900,
-        Constraint::Max(_) => BLUE.c800,
-        Constraint::Length(_) => SLATE.c700,
-        Constraint::Percentage(_) => SLATE.c800,
-        Constraint::Ratio(_, _) => SLATE.c900,
-        Constraint::Fill(_) => SLATE.c950,
-    }
-    }else{
-    match constraint {
-        Constraint::Min(_) => Color::Blue,
-        Constraint::Max(_) => BLUE.c800,
-        Constraint::Length(_) => SLATE.c700,
-        Constraint::Percentage(_) => SLATE.c800,
-        Constraint::Ratio(_, _) => SLATE.c900,
-        Constraint::Fill(_) => SLATE.c950,
-    }
+        Constraint::Min(_) => cs.Min,
+        Constraint::Max(_) => cs.Max,
+        Constraint::Length(_) => cs.Length,
+        Constraint::Percentage(_) => cs.Percentage,
+        Constraint::Ratio(_, _) => cs.Ratio,
+        Constraint::Fill(_) => cs.Fill,
     }
 }
 
@@ -540,13 +529,49 @@ fn get_description_height(s: &str) -> u16 {
     }
 }
 
-fn is_true_color_supported() -> bool{
-    let term = std::env::var("$TERM_PROGRAM").unwrap_or_default();
-    if term == "Apple_Terminal" {
-        let term_v = std::env::var("$TERM_PROGRAM_VERSION").unwrap_or_default().parse().unwrap_or(0);
-        if term_v < 460 {
-            return false;
+
+struct ColorScheme{
+    pub Min: Color,
+    pub Max: Color,
+    pub Length: Color,
+    pub Percentage: Color,
+    pub Ratio: Color,
+    pub Fill: Color,
+}
+
+impl ColorScheme{
+    pub fn new() -> Self{
+        use tailwind::{BLUE, SLATE};
+
+        if Self::is_true_color_supported() {
+            Self{
+                Min: BLUE.c900,
+                Max: BLUE.c800,
+                Length: SLATE.c700,
+                Percentage: SLATE.c800,
+                Ratio: SLATE.c900,
+                Fill: SLATE.c950,
+            }
+        }else{
+            Self{
+                Min: Color::Blue,
+                Max: Color::Blue,
+                Length: Color::Gray,
+                Percentage: Color::Gray,
+                Ratio: Color::Gray,
+                Fill: Color::Gray,
+            }
         }
     }
-    true
+
+    fn is_true_color_supported() -> bool{
+        let term = std::env::var("TERM_PROGRAM").unwrap_or_default();
+        if term == "Apple_Terminal" {
+            let term_v = std::env::var("TERM_PROGRAM_VERSION").unwrap_or_default().parse().unwrap_or(0);
+            if term_v < 460 {
+                return false;
+            }
+        }
+        true
+    }
 }
