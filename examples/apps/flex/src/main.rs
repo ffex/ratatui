@@ -508,9 +508,9 @@ impl Example {
         Paragraph::new(text).centered().block(block)
     }
 }
-
-const fn color_for_constraint(constraint: Constraint) -> Color {
+fn color_for_constraint(constraint: Constraint) -> Color {
     use tailwind::{BLUE, SLATE};
+    if is_true_color_supported() {
     match constraint {
         Constraint::Min(_) => BLUE.c900,
         Constraint::Max(_) => BLUE.c800,
@@ -518,6 +518,16 @@ const fn color_for_constraint(constraint: Constraint) -> Color {
         Constraint::Percentage(_) => SLATE.c800,
         Constraint::Ratio(_, _) => SLATE.c900,
         Constraint::Fill(_) => SLATE.c950,
+    }
+    }else{
+    match constraint {
+        Constraint::Min(_) => Color::Blue,
+        Constraint::Max(_) => BLUE.c800,
+        Constraint::Length(_) => SLATE.c700,
+        Constraint::Percentage(_) => SLATE.c800,
+        Constraint::Ratio(_, _) => SLATE.c900,
+        Constraint::Fill(_) => SLATE.c950,
+    }
     }
 }
 
@@ -528,4 +538,15 @@ fn get_description_height(s: &str) -> u16 {
     } else {
         s.split('\n').count() as u16
     }
+}
+
+fn is_true_color_supported() -> bool{
+    let term = std::env::var("$TERM_PROGRAM").unwrap_or_default();
+    if term == "Apple_Terminal" {
+        let term_v = std::env::var("$TERM_PROGRAM_VERSION").unwrap_or_default().parse().unwrap_or(0);
+        if term_v < 460 {
+            return false;
+        }
+    }
+    true
 }
