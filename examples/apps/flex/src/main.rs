@@ -581,19 +581,19 @@ impl ColorScheme {
             }
         } else {
             Self {
-                Min: Color::Blue,
-                Max: Color::Blue,
-                Length: Color::White,
-                Percentage: Color::Gray,
-                Ratio: Color::Gray,
-                Fill: Color::Gray,
-                Legacy: Color::Indexed(3),
-                Start: Color::Indexed(4),
-                Center: Color::Indexed(4),
-                End: Color::Indexed(4),
-                SpaceEvenly: Color::Indexed(5),
-                SpaceBetween: Color::Indexed(5),
-                SpaceAround: Color::Indexed(5),
+                Min: Color::Indexed(33),
+                Max: Color::Indexed(32),
+                Length: Color::Indexed(110),
+                Percentage: Color::Indexed(25),
+                Ratio: Color::Indexed(20),
+                Fill: Color::Black,
+                Legacy: Color::Indexed(216),
+                Start: Color::Indexed(33),
+                Center: Color::Indexed(39),
+                End: Color::Indexed(45),
+                SpaceEvenly: Color::Indexed(99),
+                SpaceBetween: Color::Indexed(105),
+                SpaceAround: Color::Indexed(111),
             }
         }
     }
