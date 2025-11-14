@@ -27,7 +27,7 @@ use strum::{Display, EnumIter, FromRepr, IntoEnumIterator};
 
 fn main() -> Result<()> {
     color_eyre::install()?;
-    ratatui::run(|terminal| App::default().run(terminal))
+    ratatui::run(|terminal| App::new().run(terminal))
 }
 
 const EXAMPLE_DATA: &[(&str, &[Constraint])] = &[
@@ -123,6 +123,7 @@ struct App {
     scroll_offset: u16,
     spacing: u16,
     state: AppState,
+    color_scheme: ColorScheme,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -138,6 +139,7 @@ struct Example {
     description: String,
     flex: Flex,
     spacing: u16,
+    color_scheme: ColorScheme,
 }
 
 /// Tabs for the different layouts
@@ -158,6 +160,16 @@ enum SelectedTab {
 }
 
 impl App {
+    fn new() -> Self {
+        let cs = ColorScheme::new();
+        Self{
+            selected_tab: SelectedTab::default(),
+            scroll_offset: 0,
+            spacing: 0,
+            state: AppState::default(),
+            color_scheme: cs,
+        }
+    }
     fn run(mut self, terminal: &mut DefaultTerminal) -> Result<()> {
         // increase the layout cache to account for the number of layout events. This ensures that
         // layout is not generally reprocessed on every frame (which would lead to possible janky
@@ -270,7 +282,8 @@ impl Widget for App {
 
 impl App {
     fn tabs(self) -> impl Widget {
-        let tab_titles = SelectedTab::iter().map(SelectedTab::to_tab_title);
+        let tab_titles =
+            SelectedTab::iter().map(|tab| SelectedTab::to_tab_title(tab, self.color_scheme));
         let block = Block::new()
             .title("Flex Layouts ".bold())
             .title(" Use ◄ ► to change tab, ▲ ▼  to scroll, - + to change spacing ");
@@ -362,10 +375,7 @@ impl SelectedTab {
     }
 
     /// Convert a `SelectedTab` into a `Line` to display it by the `Tabs` widget.
-    fn to_tab_title(value: Self) -> Line<'static> {
-        let cs = ColorScheme::new();
-
-        use tailwind::{INDIGO, ORANGE, SKY};
+    fn to_tab_title(value: Self, cs: ColorScheme) -> Line<'static> {
         let text = value.to_string();
         let color = match value {
             Self::Legacy => cs.Legacy,
@@ -384,37 +394,39 @@ impl StatefulWidget for SelectedTab {
     type State = u16;
     fn render(self, area: Rect, buf: &mut Buffer, spacing: &mut Self::State) {
         let spacing = *spacing;
+        let cs = ColorScheme::new();
         match self {
-            Self::Legacy => Self::render_examples(area, buf, Flex::Legacy, spacing),
-            Self::Start => Self::render_examples(area, buf, Flex::Start, spacing),
-            Self::Center => Self::render_examples(area, buf, Flex::Center, spacing),
-            Self::End => Self::render_examples(area, buf, Flex::End, spacing),
-            Self::SpaceEvenly => Self::render_examples(area, buf, Flex::SpaceEvenly, spacing),
-            Self::SpaceBetween => Self::render_examples(area, buf, Flex::SpaceBetween, spacing),
-            Self::SpaceAround => Self::render_examples(area, buf, Flex::SpaceAround, spacing),
+            Self::Legacy => Self::render_examples(area, buf, Flex::Legacy, spacing, cs),
+            Self::Start => Self::render_examples(area, buf, Flex::Start, spacing, cs),
+            Self::Center => Self::render_examples(area, buf, Flex::Center, spacing, cs),
+            Self::End => Self::render_examples(area, buf, Flex::End, spacing, cs),
+            Self::SpaceEvenly => Self::render_examples(area, buf, Flex::SpaceEvenly, spacing, cs),
+            Self::SpaceBetween => Self::render_examples(area, buf, Flex::SpaceBetween, spacing, cs),
+            Self::SpaceAround => Self::render_examples(area, buf, Flex::SpaceAround, spacing, cs),
         }
     }
 }
 
 impl SelectedTab {
-    fn render_examples(area: Rect, buf: &mut Buffer, flex: Flex, spacing: u16) {
+    fn render_examples(area: Rect, buf: &mut Buffer, flex: Flex, spacing: u16, cs: ColorScheme) {
         let heights = EXAMPLE_DATA
             .iter()
             .map(|(desc, _)| get_description_height(desc) + 4);
         let areas = Layout::vertical(heights).flex(Flex::Start).split(area);
         for (area, (description, constraints)) in areas.iter().zip(EXAMPLE_DATA.iter()) {
-            Example::new(constraints, description, flex, spacing).render(*area, buf);
+            Example::new(constraints, description, flex, spacing, cs).render(*area, buf);
         }
     }
 }
 
 impl Example {
-    fn new(constraints: &[Constraint], description: &str, flex: Flex, spacing: u16) -> Self {
+    fn new(constraints: &[Constraint], description: &str, flex: Flex, spacing: u16, color_scheme: ColorScheme) -> Self {
         Self {
             constraints: constraints.into(),
             description: description.into(),
             flex,
             spacing,
+            color_scheme,
         }
     }
 }
@@ -442,7 +454,7 @@ impl Widget for Example {
         }
 
         for (block, constraint) in blocks.iter().zip(&self.constraints) {
-            Self::illustration(*constraint, block.width).render(*block, buf);
+            Self::illustration(*constraint, block.width,self.color_scheme).render(*block, buf);
         }
 
         for spacer in spacers.iter() {
@@ -497,8 +509,8 @@ impl Example {
             .render(spacer, buf);
     }
 
-    fn illustration(constraint: Constraint, width: u16) -> impl Widget {
-        let main_color = color_for_constraint(constraint);
+    fn illustration(constraint: Constraint, width: u16, cs:ColorScheme) -> impl Widget {
+        let main_color = color_for_constraint(constraint,cs);
         let fg_color = Color::White;
         let title = format!("{constraint}");
         let content = format!("{width} px");
@@ -510,8 +522,7 @@ impl Example {
         Paragraph::new(text).centered().block(block)
     }
 }
-fn color_for_constraint(constraint: Constraint) -> Color {
-    let cs = ColorScheme::new();
+fn color_for_constraint(constraint: Constraint, cs: ColorScheme) -> Color {
     match constraint {
         Constraint::Min(_) => cs.Min,
         Constraint::Max(_) => cs.Max,
@@ -531,6 +542,7 @@ fn get_description_height(s: &str) -> u16 {
     }
 }
 
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 struct ColorScheme {
     pub Min: Color,
     pub Max: Color,
