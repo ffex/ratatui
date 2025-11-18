@@ -527,7 +527,7 @@ impl Example {
         Paragraph::new(text).centered().block(block)
     }
 }
-fn color_for_constraint(constraint: Constraint, cs: Theme) -> Color {
+const fn color_for_constraint(constraint: Constraint, cs: Theme) -> Color {
     match constraint {
         Constraint::Min(_) => cs.min_bg,
         Constraint::Max(_) => cs.max_bg,
