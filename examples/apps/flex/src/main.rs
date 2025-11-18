@@ -601,7 +601,7 @@ impl Theme {
                 space_evenly_tab: Color::Indexed(99),
                 space_between_tab: Color::Indexed(105),
                 space_around_tab: Color::Indexed(111),
-                description_fg: Color::Indexed(127),
+                description_fg: Color::Indexed(111),
             }
         }
     }
