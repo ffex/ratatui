@@ -123,7 +123,7 @@ struct App {
     scroll_offset: u16,
     spacing: u16,
     state: AppState,
-    color_scheme: ColorScheme,
+    theme: Theme,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -139,7 +139,7 @@ struct Example {
     description: String,
     flex: Flex,
     spacing: u16,
-    color_scheme: ColorScheme,
+    theme: Theme,
 }
 
 /// Tabs for the different layouts
@@ -161,13 +161,13 @@ enum SelectedTab {
 
 impl App {
     fn new() -> Self {
-        let cs = ColorScheme::new();
-        Self{
+        let cs = Theme::new();
+        Self {
             selected_tab: SelectedTab::default(),
             scroll_offset: 0,
             spacing: 0,
             state: AppState::default(),
-            color_scheme: cs,
+            theme: cs,
         }
     }
     fn run(mut self, terminal: &mut DefaultTerminal) -> Result<()> {
@@ -282,8 +282,7 @@ impl Widget for App {
 
 impl App {
     fn tabs(self) -> impl Widget {
-        let tab_titles =
-            SelectedTab::iter().map(|tab| SelectedTab::to_tab_title(tab, self.color_scheme));
+        let tab_titles = SelectedTab::iter().map(|tab| SelectedTab::to_tab_title(tab, self.theme));
         let block = Block::new()
             .title("Flex Layouts ".bold())
             .title(" Use ◄ ► to change tab, ▲ ▼  to scroll, - + to change spacing ");
@@ -375,16 +374,16 @@ impl SelectedTab {
     }
 
     /// Convert a `SelectedTab` into a `Line` to display it by the `Tabs` widget.
-    fn to_tab_title(value: Self, cs: ColorScheme) -> Line<'static> {
+    fn to_tab_title(value: Self, cs: Theme) -> Line<'static> {
         let text = value.to_string();
         let color = match value {
-            Self::Legacy => cs.Legacy,
-            Self::Start => cs.Start,
-            Self::Center => cs.Center,
-            Self::End => cs.End,
-            Self::SpaceEvenly => cs.SpaceEvenly,
-            Self::SpaceBetween => cs.SpaceBetween,
-            Self::SpaceAround => cs.SpaceAround,
+            Self::Legacy => cs.legacy_tab,
+            Self::Start => cs.start_tab,
+            Self::Center => cs.center_tab,
+            Self::End => cs.end_tab,
+            Self::SpaceEvenly => cs.space_evenly_tab,
+            Self::SpaceBetween => cs.space_between_tab,
+            Self::SpaceAround => cs.space_around_tab,
         };
         format!(" {text} ").fg(color).bg(Color::Black).into()
     }
@@ -394,7 +393,7 @@ impl StatefulWidget for SelectedTab {
     type State = u16;
     fn render(self, area: Rect, buf: &mut Buffer, spacing: &mut Self::State) {
         let spacing = *spacing;
-        let cs = ColorScheme::new();
+        let cs = Theme::new();
         match self {
             Self::Legacy => Self::render_examples(area, buf, Flex::Legacy, spacing, cs),
             Self::Start => Self::render_examples(area, buf, Flex::Start, spacing, cs),
@@ -408,7 +407,7 @@ impl StatefulWidget for SelectedTab {
 }
 
 impl SelectedTab {
-    fn render_examples(area: Rect, buf: &mut Buffer, flex: Flex, spacing: u16, cs: ColorScheme) {
+    fn render_examples(area: Rect, buf: &mut Buffer, flex: Flex, spacing: u16, cs: Theme) {
         let heights = EXAMPLE_DATA
             .iter()
             .map(|(desc, _)| get_description_height(desc) + 4);
@@ -420,13 +419,19 @@ impl SelectedTab {
 }
 
 impl Example {
-    fn new(constraints: &[Constraint], description: &str, flex: Flex, spacing: u16, color_scheme: ColorScheme) -> Self {
+    fn new(
+        constraints: &[Constraint],
+        description: &str,
+        flex: Flex,
+        spacing: u16,
+        theme: Theme,
+    ) -> Self {
         Self {
             constraints: constraints.into(),
             description: description.into(),
             flex,
             spacing,
-            color_scheme,
+            theme,
         }
     }
 }
@@ -446,7 +451,7 @@ impl Widget for Example {
             Paragraph::new(
                 self.description
                     .split('\n')
-                    .map(|s| format!("// {s}").italic().fg(tailwind::SLATE.c400))
+                    .map(|s| format!("// {s}").italic().fg(self.theme.description_fg))
                     .map(Line::from)
                     .collect::<Vec<Line>>(),
             )
@@ -454,7 +459,7 @@ impl Widget for Example {
         }
 
         for (block, constraint) in blocks.iter().zip(&self.constraints) {
-            Self::illustration(*constraint, block.width,self.color_scheme).render(*block, buf);
+            Self::illustration(*constraint, block.width, self.theme).render(*block, buf);
         }
 
         for spacer in spacers.iter() {
@@ -509,8 +514,8 @@ impl Example {
             .render(spacer, buf);
     }
 
-    fn illustration(constraint: Constraint, width: u16, cs:ColorScheme) -> impl Widget {
-        let main_color = color_for_constraint(constraint,cs);
+    fn illustration(constraint: Constraint, width: u16, cs: Theme) -> impl Widget {
+        let main_color = color_for_constraint(constraint, cs);
         let fg_color = Color::White;
         let title = format!("{constraint}");
         let content = format!("{width} px");
@@ -522,14 +527,14 @@ impl Example {
         Paragraph::new(text).centered().block(block)
     }
 }
-fn color_for_constraint(constraint: Constraint, cs: ColorScheme) -> Color {
+fn color_for_constraint(constraint: Constraint, cs: Theme) -> Color {
     match constraint {
-        Constraint::Min(_) => cs.Min,
-        Constraint::Max(_) => cs.Max,
-        Constraint::Length(_) => cs.Length,
-        Constraint::Percentage(_) => cs.Percentage,
-        Constraint::Ratio(_, _) => cs.Ratio,
-        Constraint::Fill(_) => cs.Fill,
+        Constraint::Min(_) => cs.min_bg,
+        Constraint::Max(_) => cs.max_bg,
+        Constraint::Length(_) => cs.length_bg,
+        Constraint::Percentage(_) => cs.percentage_bg,
+        Constraint::Ratio(_, _) => cs.ratio_bg,
+        Constraint::Fill(_) => cs.fill_bg,
     }
 }
 
@@ -543,57 +548,60 @@ fn get_description_height(s: &str) -> u16 {
 }
 
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
-struct ColorScheme {
-    pub Min: Color,
-    pub Max: Color,
-    pub Length: Color,
-    pub Percentage: Color,
-    pub Ratio: Color,
-    pub Fill: Color,
-    pub Legacy: Color,
-    pub Start: Color,
-    pub Center: Color,
-    pub End: Color,
-    pub SpaceEvenly: Color,
-    pub SpaceBetween: Color,
-    pub SpaceAround: Color,
+struct Theme {
+    min_bg: Color,
+    max_bg: Color,
+    length_bg: Color,
+    percentage_bg: Color,
+    ratio_bg: Color,
+    fill_bg: Color,
+    legacy_tab: Color,
+    start_tab: Color,
+    center_tab: Color,
+    end_tab: Color,
+    space_evenly_tab: Color,
+    space_between_tab: Color,
+    space_around_tab: Color,
+    description_fg: Color,
 }
 
-impl ColorScheme {
+impl Theme {
     pub fn new() -> Self {
         use tailwind::{BLUE, INDIGO, ORANGE, SKY, SLATE};
 
         if Self::is_true_color_supported() {
             Self {
-                Min: BLUE.c900,
-                Max: BLUE.c800,
-                Length: SLATE.c700,
-                Percentage: SLATE.c800,
-                Ratio: SLATE.c900,
-                Fill: SLATE.c950,
-                Legacy: ORANGE.c400,
-                Start: SKY.c400,
-                Center: SKY.c300,
-                End: SKY.c200,
-                SpaceEvenly: INDIGO.c400,
-                SpaceBetween: INDIGO.c300,
-                SpaceAround: INDIGO.c500,
+                min_bg: BLUE.c900,
+                max_bg: BLUE.c800,
+                length_bg: SLATE.c700,
+                percentage_bg: SLATE.c800,
+                ratio_bg: SLATE.c900,
+                fill_bg: SLATE.c950,
+                legacy_tab: ORANGE.c400,
+                start_tab: SKY.c400,
+                center_tab: SKY.c300,
+                end_tab: SKY.c200,
+                space_evenly_tab: INDIGO.c400,
+                space_between_tab: INDIGO.c300,
+                space_around_tab: INDIGO.c500,
+                description_fg: SLATE.c400,
             }
         } else {
             Self {
-                Min: Color::Indexed(33),
-                Max: Color::Indexed(32),
-                Length: Color::Indexed(110),
-                Percentage: Color::Indexed(25),
-                Ratio: Color::Indexed(20),
-                Fill: Color::Black,
-                Legacy: Color::Indexed(216),
-                Start: Color::Indexed(33),
-                Center: Color::Indexed(39),
-                End: Color::Indexed(45),
-                SpaceEvenly: Color::Indexed(99),
-                SpaceBetween: Color::Indexed(105),
-                SpaceAround: Color::Indexed(111),
+                min_bg: Color::Indexed(33),
+                max_bg: Color::Indexed(32),
+                length_bg: Color::Indexed(110),
+                percentage_bg: Color::Indexed(25),
+                ratio_bg: Color::Indexed(20),
+                fill_bg: Color::Black,
+                legacy_tab: Color::Indexed(216),
+                start_tab: Color::Indexed(33),
+                center_tab: Color::Indexed(39),
+                end_tab: Color::Indexed(45),
+                space_evenly_tab: Color::Indexed(99),
+                space_between_tab: Color::Indexed(105),
+                space_around_tab: Color::Indexed(111),
+                description_fg: Color::Indexed(127),
             }
         }
     }
