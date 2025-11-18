@@ -180,3 +180,5 @@ This project is licensed under the [MIT License][License].
 [Florian Dehau]: https://github.com/fdehau
 [`cargo-generate`]: https://crates.io/crates/cargo-generate
 [License]: ./LICENSE
+
+test sign!
